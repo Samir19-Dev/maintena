@@ -1,0 +1,13 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:mysql://localhost:3306/maintena_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Bogota
+    username: root
+    password: root
+  jpa:
+    show-sql: true
+
+server:
+  port: 8080
