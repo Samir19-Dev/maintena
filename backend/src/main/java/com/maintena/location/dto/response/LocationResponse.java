@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 public class LocationResponse {
 	private Long id;
 	private String nombre;
+	private String edificio;
+	private String piso;
 	private String descripcion;
 	private Boolean activo;
 	private LocalDateTime fechaCreacion;
