@@ -24,14 +24,12 @@ public class AssetController {
 
 	@Operation(summary = "Listar todos los activos")
 	@GetMapping
-	@PreAuthorize("hasAnyRole('ADMIN','TECNICO','EMPLEADO')")
 	public ResponseEntity<List<AssetResponse>> findAll() {
 		return ResponseEntity.ok(assetService.findAll());
 	}
 
 	@Operation(summary = "Obtener activo por ID")
 	@GetMapping("/{id}")
-	@PreAuthorize("hasAnyRole('ADMIN','TECNICO','EMPLEADO')")
 	public ResponseEntity<AssetResponse> findById(@PathVariable Long id) {
 		return ResponseEntity.ok(assetService.findById(id));
 	}

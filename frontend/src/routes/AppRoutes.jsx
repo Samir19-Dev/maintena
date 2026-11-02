@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import AuthLayout from '../components/layout/AuthLayout';
 import MainLayout from '../components/layout/MainLayout';
 import ProtectedRoute from '../components/common/ProtectedRoute';
+import RoleRoute from '../components/common/RoleRoute';
 import LoginPage from '../pages/auth/LoginPage';
 import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/auth/ResetPasswordPage';
@@ -37,9 +38,11 @@ const AppRoutes = () => {
             <Route path="/assets" element={<AssetsPage />} />
             <Route path="/maintenance/orders" element={<OrdersPage />} />
             <Route path="/maintenance/reports" element={<ReportsPage />} />
-            <Route path="/users" element={<UsersPage />} />
-            <Route path="/roles" element={<RolesPage />} />
-            <Route path="/audit" element={<AuditPage />} />
+            <Route element={<RoleRoute roles={['ADMIN']} />}>
+              <Route path="/users" element={<UsersPage />} />
+              <Route path="/roles" element={<RolesPage />} />
+              <Route path="/audit" element={<AuditPage />} />
+            </Route>
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Route>

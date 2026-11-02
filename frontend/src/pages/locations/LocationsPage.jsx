@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import locationService from '../../services/locationService';
+import { useAuthStore } from '../../store/authStore';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const LocationsPage = () => {
+  const { user } = useAuthStore();
+  const isAdmin = user?.rol === 'ADMIN';
+
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -74,13 +78,15 @@ const LocationsPage = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Ubicaciones</h1>
-        <button
-          onClick={() => { setShowModal(true); setEditingId(null); setFormData({ nombre: '', edificio: '', piso: '', descripcion: '', activo: true }); }}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nueva Ubicación
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => { setShowModal(true); setEditingId(null); setFormData({ nombre: '', edificio: '', piso: '', descripcion: '', activo: true }); }}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nueva Ubicación
+          </button>
+        )}
       </div>
 
       <div className="bg-white shadow rounded-lg overflow-hidden">
@@ -91,7 +97,9 @@ const LocationsPage = () => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Edificio</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Piso</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+              {isAdmin && (
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -105,14 +113,16 @@ const LocationsPage = () => {
                     {loc.activo ? 'Activo' : 'Inactivo'}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button onClick={() => handleEdit(loc)} className="text-blue-600 hover:text-blue-900 mr-4">
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => handleDelete(loc.id)} className="text-red-600 hover:text-red-900">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </td>
+                {isAdmin && (
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button onClick={() => handleEdit(loc)} className="text-blue-600 hover:text-blue-900 mr-4">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDelete(loc.id)} className="text-red-600 hover:text-red-900">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

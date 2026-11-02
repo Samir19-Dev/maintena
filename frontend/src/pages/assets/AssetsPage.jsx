@@ -2,16 +2,39 @@ import { useState, useEffect } from 'react';
 import assetService from '../../services/assetService';
 import categoryService from '../../services/categoryService';
 import locationService from '../../services/locationService';
+import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 
+const emptyForm = {
+  codigo: '',
+  nombre: '',
+  descripcion: '',
+  marca: '',
+  modelo: '',
+  serial: '',
+  fechaAdquisicion: '',
+  categoriaId: '',
+  ubicacionId: '',
+  activo: true,
+};
+
+const errorMessage = (error, fallback) => {
+  const data = error.response?.data;
+  const firstValidationError = data?.errors ? Object.values(data.errors)[0] : null;
+  return firstValidationError || data?.message || fallback;
+};
+
 const AssetsPage = () => {
+  const { user } = useAuthStore();
+  const isAdmin = user?.rol === 'ADMIN';
+
   const [assets, setAssets] = useState([]);
   const [categories, setCategories] = useState([]);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ codigo: '', nombre: '', descripcion: '', marca: '', modelo: '', serial: '', fechaAdquisicion: '', categoriaId: '', ubicacionId: '', activo: true });
+  const [formData, setFormData] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
 
   const fetchData = async () => {
@@ -52,11 +75,11 @@ const AssetsPage = () => {
         toast.success('Activo creado');
       }
       setShowModal(false);
-      setFormData({ codigo: '', nombre: '', descripcion: '', fechaAdquisicion: '', activo: true, categoryId: '', locationId: '' });
+      setFormData(emptyForm);
       setEditingId(null);
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al guardar');
+      toast.error(errorMessage(error, 'Error al guardar'));
     }
   };
 
@@ -65,6 +88,9 @@ const AssetsPage = () => {
       codigo: asset.codigo,
       nombre: asset.nombre,
       descripcion: asset.descripcion || '',
+      marca: asset.marca || '',
+      modelo: asset.modelo || '',
+      serial: asset.serial || '',
       fechaAdquisicion: asset.fechaAdquisicion || '',
       activo: asset.activo,
       categoriaId: asset.categoriaId || '',
@@ -75,7 +101,7 @@ const AssetsPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Está seguro de eliminar this activo?')) {
+    if (window.confirm('¿Está seguro de eliminar este activo?')) {
       try {
         await assetService.delete(id);
         toast.success('Activo eliminado');
@@ -90,17 +116,19 @@ const AssetsPage = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Activos</h1>
-        <button
-          onClick={() => {
-            setFormData({ codigo: '', nombre: '', descripcion: '', marca: '', modelo: '', serial: '', fechaAdquisicion: '', activo: true, categoriaId: '', ubicacionId: '' });
-            setEditingId(null);
-            setShowModal(true);
-          }}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nuevo Activo
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => {
+              setFormData(emptyForm);
+              setEditingId(null);
+              setShowModal(true);
+            }}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nuevo Activo
+          </button>
+        )}
       </div>
 
       <div className="bg-white shadow rounded-lg overflow-hidden">
@@ -112,38 +140,42 @@ const AssetsPage = () => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+              {isAdmin && (
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan="6" className="px-6 py-4 text-center text-gray-500">Cargando...</td>
+                <td colSpan={isAdmin ? 6 : 5} className="px-6 py-4 text-center text-gray-500">Cargando...</td>
               </tr>
             ) : assets.length === 0 ? (
               <tr>
-                <td colSpan="6" className="px-6 py-4 text-center text-gray-500">No hay activos</td>
+                <td colSpan={isAdmin ? 6 : 5} className="px-6 py-4 text-center text-gray-500">No hay activos</td>
               </tr>
             ) : (
               assets.map((asset) => (
                 <tr key={asset.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{asset.codigo}</td>
                   <td className="px-6 py-4 text-sm text-gray-900">{asset.nombre}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{asset.categoryNombre || '-'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{asset.locationNombre || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{asset.categoriaNombre || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{asset.ubicacionNombre || '-'}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${asset.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                       {asset.activo ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button onClick={() => handleEdit(asset)} className="text-blue-600 hover:text-blue-900 mr-4">
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(asset.id)} className="text-red-600 hover:text-red-900">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
+                  {isAdmin && (
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button onClick={() => handleEdit(asset)} className="text-blue-600 hover:text-blue-900 mr-4">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(asset.id)} className="text-red-600 hover:text-red-900">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))
             )}
@@ -187,15 +219,45 @@ const AssetsPage = () => {
                   rows="2"
                 />
               </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Marca</label>
+                  <input
+                    type="text"
+                    value={formData.marca}
+                    onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Modelo</label>
+                  <input
+                    type="text"
+                    value={formData.modelo}
+                    onChange={(e) => setFormData({ ...formData, modelo: e.target.value })}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Serial</label>
+                  <input
+                    type="text"
+                    value={formData.serial}
+                    onChange={(e) => setFormData({ ...formData, serial: e.target.value })}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Categoría</label>
                   <select
-                    value={formData.categoryId}
-                    onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                    value={formData.categoriaId}
+                    onChange={(e) => setFormData({ ...formData, categoriaId: e.target.value })}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
                   >
-                    <option value="">Sin categoría</option>
+                    <option value="">Seleccione...</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>{c.nombre}</option>
                     ))}
@@ -204,11 +266,12 @@ const AssetsPage = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Ubicación</label>
                   <select
-                    value={formData.locationId}
-                    onChange={(e) => setFormData({ ...formData, locationId: e.target.value })}
+                    value={formData.ubicacionId}
+                    onChange={(e) => setFormData({ ...formData, ubicacionId: e.target.value })}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
                   >
-                    <option value="">Sin ubicación</option>
+                    <option value="">Seleccione...</option>
                     {locations.map((l) => (
                       <option key={l.id} value={l.id}>{l.nombre}</option>
                     ))}

@@ -8,9 +8,11 @@ import com.maintena.asset.repository.AssetRepository;
 import com.maintena.asset.service.AssetService;
 import com.maintena.audit.entity.AuditAction;
 import com.maintena.audit.service.AuditService;
+import com.maintena.category.entity.Category;
 import com.maintena.category.repository.CategoryRepository;
 import com.maintena.exception.BadRequestException;
 import com.maintena.exception.ResourceNotFoundException;
+import com.maintena.location.entity.Location;
 import com.maintena.location.repository.LocationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -50,13 +52,13 @@ public class AssetServiceImpl implements AssetService {
 		if (assetRepository.existsByCodigo(request.getCodigo())) {
 			throw new BadRequestException("Ya existe un activo con ese código");
 		}
-		if (!categoryRepository.existsById(request.getCategoriaId())) {
-			throw new ResourceNotFoundException("Categoría", "id", request.getCategoriaId());
-		}
-		if (!locationRepository.existsById(request.getUbicacionId())) {
-			throw new ResourceNotFoundException("Ubicación", "id", request.getUbicacionId());
-		}
+		Category categoria = categoryRepository.findById(request.getCategoriaId())
+			.orElseThrow(() -> new ResourceNotFoundException("Categoría", "id", request.getCategoriaId()));
+		Location ubicacion = locationRepository.findById(request.getUbicacionId())
+			.orElseThrow(() -> new ResourceNotFoundException("Ubicación", "id", request.getUbicacionId()));
 		Asset asset = assetMapper.toEntity(request);
+		asset.setCategoria(categoria);
+		asset.setUbicacion(ubicacion);
 		Asset saved = assetRepository.save(asset);
 		auditService.record(AuditAction.CREATE, ENTIDAD, saved.getId(),
 			"Activo creado: " + saved.getCodigo() + " - " + saved.getNombre());
@@ -70,13 +72,13 @@ public class AssetServiceImpl implements AssetService {
 		if (!asset.getCodigo().equalsIgnoreCase(request.getCodigo()) && assetRepository.existsByCodigo(request.getCodigo())) {
 			throw new BadRequestException("Ya existe un activo con ese código");
 		}
-		if (!categoryRepository.existsById(request.getCategoriaId())) {
-			throw new ResourceNotFoundException("Categoría", "id", request.getCategoriaId());
-		}
-		if (!locationRepository.existsById(request.getUbicacionId())) {
-			throw new ResourceNotFoundException("Ubicación", "id", request.getUbicacionId());
-		}
+		Category categoria = categoryRepository.findById(request.getCategoriaId())
+			.orElseThrow(() -> new ResourceNotFoundException("Categoría", "id", request.getCategoriaId()));
+		Location ubicacion = locationRepository.findById(request.getUbicacionId())
+			.orElseThrow(() -> new ResourceNotFoundException("Ubicación", "id", request.getUbicacionId()));
 		assetMapper.updateEntity(request, asset);
+		asset.setCategoria(categoria);
+		asset.setUbicacion(ubicacion);
 		Asset saved = assetRepository.save(asset);
 		auditService.record(AuditAction.UPDATE, ENTIDAD, saved.getId(),
 			"Activo actualizado: " + saved.getCodigo() + " - " + saved.getNombre());

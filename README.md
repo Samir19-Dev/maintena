@@ -231,6 +231,8 @@ Cualquier usuario con visibilidad sobre la orden (administradores y técnicos ve
 | `TECNICO` | Ve todas las órdenes, cambia estado de las asignadas, gestiona reportes |
 | `EMPLEADO` | Reporta fallas y ve sus propios reportes y órdenes |
 
+Los roles personalizados (por ejemplo `SUPERVISOR`) se comportan como `EMPLEADO` para la visibilidad de datos: ven sus propias órdenes y reportes, y solo lectura en maestros. Los permisos de escritura siguen reservados a `ADMIN` (maestros y usuarios) y `TECNICO` (operación de órdenes asignadas).
+
 ## Migraciones Flyway
 
 ```

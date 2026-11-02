@@ -21,8 +21,8 @@ const NAV_ITEMS = [
   { to: '/assets', label: 'Activos', icon: Box },
   { to: '/maintenance/orders', label: 'Órdenes', icon: Wrench },
   { to: '/maintenance/reports', label: 'Reportes', icon: ClipboardList },
-  { to: '/users', label: 'Usuarios', icon: Users },
-  { to: '/roles', label: 'Roles', icon: Shield },
+  { to: '/users', label: 'Usuarios', icon: Users, roles: ['ADMIN'] },
+  { to: '/roles', label: 'Roles', icon: Shield, roles: ['ADMIN'] },
   { to: '/audit', label: 'Auditoría', icon: ScrollText, roles: ['ADMIN'] },
 ];
 

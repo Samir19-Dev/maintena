@@ -50,6 +50,9 @@ const OrdersPage = () => {
   const { user } = useAuthStore();
   const isAdmin = user?.rol === 'ADMIN';
 
+  const canChangeStatus = (order) =>
+    isAdmin || (user?.rol === 'TECNICO' && order.tecnicoId === user?.id);
+
   const [orders, setOrders] = useState([]);
   const [assets, setAssets] = useState([]);
   const [technicians, setTechnicians] = useState([]);
@@ -281,7 +284,7 @@ const OrdersPage = () => {
                     >
                       <Eye className="w-4 h-4" />
                     </button>
-                    {TRANSICIONES[order.estado]?.length > 0 && (
+                    {canChangeStatus(order) && TRANSICIONES[order.estado]?.length > 0 && (
                       <select
                         value=""
                         onChange={(e) => handleStatusChange(order, e.target.value)}
