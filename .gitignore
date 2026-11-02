@@ -25,6 +25,8 @@ replay_pid*
 
 # Maven
 target/
+# Salida de compilación de Eclipse/IDE
+bin/
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup

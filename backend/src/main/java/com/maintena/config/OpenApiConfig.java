@@ -19,14 +19,10 @@ public class OpenApiConfig {
 		return new OpenAPI()
 			.info(new Info()
 				.title("Maintena API")
-				.description("Plataforma web de gestión de mantenimiento y órdenes de trabajo - API REST")
+				.description("API REST para la plataforma de gestión de mantenimiento y órdenes de trabajo")
 				.version("v1.0.0")
-				.contact(new Contact()
-					.name("Maintena Team")
-					.email("soporte@maintena.com"))
-				.license(new License()
-					.name("MIT License")
-					.url("https://opensource.org/licenses/MIT")))
+				.contact(new Contact().name("Maintena Team").email("soporte@maintena.com"))
+				.license(new License().name("MIT License").url("https://opensource.org/licenses/MIT")))
 			.addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
 			.components(new Components()
 				.addSecuritySchemes(securitySchemeName,
@@ -35,6 +31,6 @@ public class OpenApiConfig {
 						.type(SecurityScheme.Type.HTTP)
 						.scheme("bearer")
 						.bearerFormat("JWT")
-						.description("Ingrese el token JWT")));
+						.description("Ingrese el token JWT en el formato: Bearer <token>")));
 	}
 }

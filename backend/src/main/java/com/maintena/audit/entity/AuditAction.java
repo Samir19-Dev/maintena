@@ -1,0 +1,20 @@
+package com.maintena.audit.entity;
+
+public enum AuditAction {
+	LOGIN,
+	LOGIN_FAILED,
+	CREATE,
+	UPDATE,
+	DELETE,
+	ASSIGN,
+	STATUS_CHANGE,
+	APPROVE,
+	REJECT,
+	EXPORT,
+	LOGOUT,
+	PASSWORD_CHANGE,
+	PASSWORD_RESET_REQUEST,
+	PASSWORD_RESET,
+	COMMENT,
+	ATTACH
+}

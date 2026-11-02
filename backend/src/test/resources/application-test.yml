@@ -1,0 +1,21 @@
+spring:
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+app:
+  mail:
+    enabled: false
+  attachments:
+    dir: ${java.io.tmpdir}/maintena-test-uploads
+  jwt:
+    secret: test-secret-key-with-at-least-32-characters-long
+  frontend-url: http://localhost:5173
+
+logging:
+  level:
+    com.maintena: WARN
+    org.springframework.security: WARN

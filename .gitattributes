@@ -1,0 +1,13 @@
+# Normaliza los archivos de texto a LF para que Spotless, Docker y CI
+# produzcan el mismo resultado en Windows, Linux y macOS.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.jar binary
+*.zip binary

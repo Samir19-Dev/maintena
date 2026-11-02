@@ -2,21 +2,21 @@ package com.maintena.user.entity;
 
 import com.maintena.role.entity.Role;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
+@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class User {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,11 +44,11 @@ public class User {
 	@JoinColumn(name = "rol_id", nullable = false)
 	private Role role;
 
-	@CreationTimestamp
+	@CreatedDate
 	@Column(name = "fecha_creacion", nullable = false, updatable = false)
 	private LocalDateTime fechaCreacion;
 
-	@UpdateTimestamp
+	@LastModifiedDate
 	@Column(name = "fecha_actualizacion")
 	private LocalDateTime fechaActualizacion;
 }
