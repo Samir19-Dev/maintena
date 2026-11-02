@@ -29,6 +29,7 @@ import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -113,6 +114,23 @@ class DashboardServiceImplTest {
 		assertThat(summary.getTopTechnicians().get(0).tecnico()).isEqualTo("Carlos Tecnico");
 		assertThat(summary.getTopTechnicians().get(0).completadas()).isEqualTo(2);
 		verify(orderRepository).findAll();
+	}
+
+	@Test
+	@DisplayName("un técnico solo ve en el dashboard las órdenes asignadas a él")
+	void summaryScopesOrdersForTechnician() {
+		when(currentUserService.isAdmin()).thenReturn(false);
+		when(currentUserService.hasRole("TECNICO")).thenReturn(true);
+		when(currentUserService.getCurrentUser()).thenReturn(tecnico);
+		when(orderRepository.findByTecnicoId(2L)).thenReturn(List.of());
+		when(reportRepository.findAll()).thenReturn(List.of());
+		when(assetRepository.findAll()).thenReturn(List.of());
+
+		DashboardSummaryResponse summary = service.getSummary();
+
+		assertThat(summary.getTotalOrders()).isZero();
+		verify(orderRepository).findByTecnicoId(2L);
+		verify(orderRepository, never()).findAll();
 	}
 
 	@Test

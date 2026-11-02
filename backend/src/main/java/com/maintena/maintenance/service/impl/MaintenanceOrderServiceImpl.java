@@ -67,8 +67,10 @@ public class MaintenanceOrderServiceImpl implements MaintenanceOrderService {
 	@Transactional(readOnly = true)
 	public List<MaintenanceOrderResponse> findAllVisible() {
 		List<MaintenanceOrder> orders;
-		if (currentUserService.isAdmin() || currentUserService.hasRole("TECNICO")) {
+		if (currentUserService.isAdmin()) {
 			orders = orderRepository.findAll();
+		} else if (currentUserService.hasRole("TECNICO")) {
+			orders = orderRepository.findByTecnicoId(currentUserService.getCurrentUser().getId());
 		} else {
 			orders = orderRepository.findBySolicitanteId(currentUserService.getCurrentUser().getId());
 		}
@@ -207,8 +209,17 @@ public class MaintenanceOrderServiceImpl implements MaintenanceOrderService {
 	}
 
 	private void assertCanView(MaintenanceOrder order) {
-		if (currentUserService.isAdmin() || currentUserService.hasRole("TECNICO")) return;
-		if (!order.getSolicitante().getId().equals(currentUserService.getCurrentUser().getId())) {
+		if (currentUserService.isAdmin()) {
+			return;
+		}
+		User current = currentUserService.getCurrentUser();
+		if (currentUserService.hasRole("TECNICO")) {
+			if (order.getTecnico() != null && order.getTecnico().getId().equals(current.getId())) {
+				return;
+			}
+			throw new UnauthorizedActionException("No tiene permiso para ver esta orden");
+		}
+		if (!order.getSolicitante().getId().equals(current.getId())) {
 			throw new UnauthorizedActionException("No tiene permiso para ver esta orden");
 		}
 	}

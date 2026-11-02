@@ -303,6 +303,49 @@ class MaintenanceOrderServiceImplTest {
 	}
 
 	@Test
+	@DisplayName("un técnico solo ve las órdenes asignadas a él")
+	void technicianSeesOnlyAssignedOrders() {
+		when(currentUserService.isAdmin()).thenReturn(false);
+		when(currentUserService.hasRole("TECNICO")).thenReturn(true);
+		when(currentUserService.getCurrentUser()).thenReturn(tecnico);
+		when(orderRepository.findByTecnicoId(2L)).thenReturn(List.of(order));
+
+		service.findAllVisible();
+
+		verify(orderRepository).findByTecnicoId(2L);
+		verify(orderRepository, never()).findAll();
+		verify(orderRepository, never()).findBySolicitanteId(anyLong());
+	}
+
+	@Test
+	@DisplayName("un técnico no puede ver una orden que no tiene asignada")
+	void technicianCannotViewForeignOrder() {
+		order.setTecnico(user(4L, "Luis", "Tecnico", "TECNICO"));
+		when(currentUserService.isAdmin()).thenReturn(false);
+		when(currentUserService.hasRole("TECNICO")).thenReturn(true);
+		when(currentUserService.getCurrentUser()).thenReturn(tecnico);
+		when(orderRepository.findById(50L)).thenReturn(Optional.of(order));
+
+		assertThatThrownBy(() -> service.findById(50L))
+			.isInstanceOf(UnauthorizedActionException.class)
+			.hasMessageContaining("No tiene permiso");
+	}
+
+	@Test
+	@DisplayName("un técnico puede ver una orden asignada a él")
+	void technicianCanViewAssignedOrder() {
+		order.setTecnico(tecnico);
+		when(currentUserService.isAdmin()).thenReturn(false);
+		when(currentUserService.hasRole("TECNICO")).thenReturn(true);
+		when(currentUserService.getCurrentUser()).thenReturn(tecnico);
+		when(orderRepository.findById(50L)).thenReturn(Optional.of(order));
+
+		service.findById(50L);
+
+		verify(orderRepository).findById(50L);
+	}
+
+	@Test
 	@DisplayName("un empleado no puede ver una orden ajena")
 	void employeeCannotViewForeignOrder() {
 		when(currentUserService.isAdmin()).thenReturn(false);

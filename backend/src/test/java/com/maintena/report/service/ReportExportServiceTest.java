@@ -30,6 +30,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -120,6 +121,22 @@ class ReportExportServiceTest {
 		assertThat(csv).contains("OT-2026-0001");
 		assertThat(csv).doesNotContain("OT-2026-0002");
 		verify(orderRepository).findBySolicitanteId(3L);
+	}
+
+	@Test
+	@DisplayName("un técnico solo exporta las órdenes asignadas a él")
+	void technicianExportsOnlyAssignedOrders() {
+		when(currentUserService.isAdmin()).thenReturn(false);
+		when(currentUserService.hasRole("TECNICO")).thenReturn(true);
+		when(currentUserService.getCurrentUser()).thenReturn(tecnico);
+		when(orderRepository.findByTecnicoId(2L)).thenReturn(List.of(preventive));
+
+		String csv = new String(service.exportOrdersCsv(null, null), StandardCharsets.UTF_8);
+
+		assertThat(csv).contains("OT-2026-0001");
+		assertThat(csv).doesNotContain("OT-2026-0002");
+		verify(orderRepository).findByTecnicoId(2L);
+		verify(orderRepository, never()).findAll();
 	}
 
 	@Test

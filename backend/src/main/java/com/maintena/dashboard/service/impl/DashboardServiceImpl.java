@@ -90,8 +90,11 @@ public class DashboardServiceImpl implements DashboardService {
 	}
 
 	private List<MaintenanceOrder> visibleOrders() {
-		if (currentUserService.isAdmin() || currentUserService.hasRole("TECNICO")) {
+		if (currentUserService.isAdmin()) {
 			return orderRepository.findAll();
+		}
+		if (currentUserService.hasRole("TECNICO")) {
+			return orderRepository.findByTecnicoId(currentUserService.getCurrentUser().getId());
 		}
 		return orderRepository.findBySolicitanteId(currentUserService.getCurrentUser().getId());
 	}
