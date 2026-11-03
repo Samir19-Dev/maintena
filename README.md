@@ -69,12 +69,38 @@ mvn test      # pruebas unitarias + arquitectura
 mvn verify    # además: integración con MySQL real, JaCoCo y Spotless
 ```
 
-- **126 pruebas** en total: unitarias con JUnit 5 + Mockito, **13 reglas de arquitectura con ArchUnit** y pruebas de integración HTTP contra un **MySQL 8.4 real levantado con Testcontainers** (`AuthFlowIntegrationTest`, `UserDeactivationIntegrationTest`).
+- **131 pruebas** en total: unitarias con JUnit 5 + Mockito, **13 reglas de arquitectura con ArchUnit** y pruebas de integración HTTP contra un **MySQL 8.4 real levantado con Testcontainers** (`AuthFlowIntegrationTest`, `UserDeactivationIntegrationTest`).
 - Cobertura medida con JaCoCo (umbral mínimo: 50 % de líneas y 30 % de ramas). El reporte queda en `backend/target/site/jacoco/index.html`; cobertura actual: **60,7 % de líneas** y **48,6 % de ramas**.
 - Spotless verifica imports sin usar, espacios finales y saltos de línea en `mvn verify` (`mvn spotless:apply` corrige).
 - Las pruebas de integración necesitan Docker en marcha. En Docker Desktop 29+ se fija `api.version=1.44` para Testcontainers en `pom.xml` (el máximo soportado por docker-java 3.4.x y aceptado por el motor).
 
 Casos cubiertos: máquina de estados de órdenes y permisos, aprobación/rechazo de reportes (incluida la generación de la orden correctiva), comentarios y adjuntos de órdenes (permisos de autor/administrador, validación de tipo y tamaño, limpieza de archivos), borrado protegido de órdenes con reporte y desactivación de usuarios con revocación de sesiones, login y auditoría de accesos, refresh con rotación y revocación, perfil y cambio de contraseña, bloqueo por intentos fallidos, recuperación de contraseña (token hasheado, caducidad, un solo uso, cooldown y revocación de sesiones), envío de correo tolerante a fallos y notificaciones de mantenimiento, validación del filtro JWT (los refresh tokens no sirven como bearer), exportación CSV/PDF, cálculo de KPIs del dashboard, correlación de peticiones y contrato OpenAPI público.
+
+### Pruebas E2E con Playwright
+
+La carpeta `frontend/e2e` contiene 12 pruebas que recorren los flujos de los tres roles contra la aplicación real (no usan mocks):
+
+| Suite | Cobertura |
+|---|---|
+| `admin.spec.js` | Login, dashboard con KPIs, navegación por todos los módulos, creación/edición/eliminación de una categoría, cierre de sesión y error con credenciales inválidas |
+| `tecnico.spec.js` | Menús de administración ocultos, redirección de `/users`, órdenes limitadas a las asignadas (contrastadas con la API), filtros, búsqueda y detalle con comentarios/adjuntos |
+| `empleado.spec.js` | Menús de administración ocultos, redirección de `/users`, órdenes propias sin acciones de gestión y creación de un reporte de falla |
+
+Requisitos: el stack en marcha (`docker compose up -d`) y los datos de prueba cargados con `scripts/seed-demo.ps1`, porque las pruebas usan los usuarios `demo.*`.
+
+```bash
+cd frontend
+npm install
+npx playwright install chromium   # solo la primera vez
+npm run test:e2e                  # ejecución headless
+npm run test:e2e:headed           # con navegador visible
+npm run test:e2e:report           # abre el reporte HTML
+```
+
+- `@playwright/test` con Chromium y `workers: 1`: la suite comparte la misma base de datos y se ejecuta en serie para evitar carreras.
+- Las pruebas crean datos temporales (una categoría y un reporte) y los eliminan por API al terminar, incluso si alguna falla.
+- `E2E_BASE_URL` (por defecto `http://localhost:8081`) y `E2E_API_URL` (por defecto `http://localhost:8080/api/v1`) permiten apuntar a otro entorno.
+- En fallo se guardan captura, vídeo y traza en `frontend/test-results/`; el reporte HTML queda en `frontend/playwright-report/`.
 
 ### Integración continua
 
