@@ -9,6 +9,7 @@ const maintenanceService = {
     assign: (id, tecnicoId) => api.patch(`/maintenance/orders/${id}/assign`, { tecnicoId }),
     changeStatus: (id, estado, observaciones) =>
       api.patch(`/maintenance/orders/${id}/status`, { estado, observaciones }),
+    reopen: (id, motivo) => api.patch(`/maintenance/orders/${id}/reopen`, { motivo }),
     delete: (id) => api.delete(`/maintenance/orders/${id}`),
     comments: {
       list: (orderId) => api.get(`/maintenance/orders/${orderId}/comments`),

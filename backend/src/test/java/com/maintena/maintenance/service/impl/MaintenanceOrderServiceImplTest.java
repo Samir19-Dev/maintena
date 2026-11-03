@@ -47,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -261,6 +262,104 @@ class MaintenanceOrderServiceImplTest {
 		assertThatThrownBy(() -> service.assign(50L, 2L))
 			.isInstanceOf(BadRequestException.class)
 			.hasMessageContaining("finalizada");
+	}
+
+	@Test
+	@DisplayName("un administrador puede cancelar una orden")
+	void adminCanCancelOrder() {
+		order.setEstado(OrderStatus.ASIGNADA);
+		order.setTecnico(tecnico);
+		when(currentUserService.isAdmin()).thenReturn(true);
+		when(orderRepository.findById(50L)).thenReturn(Optional.of(order));
+
+		service.changeStatus(50L, OrderStatus.CANCELADA, null);
+
+		assertThat(order.getEstado()).isEqualTo(OrderStatus.CANCELADA);
+		verify(auditService).record(eq(AuditAction.STATUS_CHANGE), eq("MANTENIMIENTO_ORDEN"), eq(50L), any());
+	}
+
+	@Test
+	@DisplayName("un técnico no puede cancelar una orden")
+	void technicianCannotCancelOrder() {
+		order.setEstado(OrderStatus.ASIGNADA);
+		order.setTecnico(tecnico);
+		when(currentUserService.isAdmin()).thenReturn(false);
+		when(currentUserService.getCurrentUser()).thenReturn(tecnico);
+		when(orderRepository.findById(50L)).thenReturn(Optional.of(order));
+
+		assertThatThrownBy(() -> service.changeStatus(50L, OrderStatus.CANCELADA, null))
+			.isInstanceOf(UnauthorizedActionException.class)
+			.hasMessageContaining("administrador");
+
+		verify(orderRepository, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("reabre como PENDIENTE una orden cancelada sin técnico")
+	void reopenWithoutTechnicianReturnsToPending() {
+		order.setEstado(OrderStatus.CANCELADA);
+		order.setFechaInicio(LocalDateTime.now().minusHours(2));
+		order.setFechaFin(LocalDateTime.now().minusHours(1));
+		when(currentUserService.isAdmin()).thenReturn(true);
+		when(orderRepository.findById(50L)).thenReturn(Optional.of(order));
+
+		service.reopen(50L, "Cancelada por error");
+
+		assertThat(order.getEstado()).isEqualTo(OrderStatus.PENDIENTE);
+		assertThat(order.getFechaInicio()).isNull();
+		assertThat(order.getFechaFin()).isNull();
+		verify(auditService).record(eq(AuditAction.REOPEN), eq("MANTENIMIENTO_ORDEN"), eq(50L),
+			contains("Cancelada por error"));
+	}
+
+	@Test
+	@DisplayName("reabre como ASIGNADA una orden cancelada que conserva técnico")
+	void reopenWithTechnicianReturnsToAssigned() {
+		order.setEstado(OrderStatus.CANCELADA);
+		order.setTecnico(tecnico);
+		when(currentUserService.isAdmin()).thenReturn(true);
+		when(orderRepository.findById(50L)).thenReturn(Optional.of(order));
+
+		service.reopen(50L, "Se canceló por equivocación");
+
+		assertThat(order.getEstado()).isEqualTo(OrderStatus.ASIGNADA);
+		assertThat(order.getTecnico()).isSameAs(tecnico);
+	}
+
+	@Test
+	@DisplayName("no permite reabrir una orden que no está cancelada")
+	void reopenFailsWhenOrderIsNotCancelled() {
+		order.setEstado(OrderStatus.PENDIENTE);
+		when(currentUserService.isAdmin()).thenReturn(true);
+		when(orderRepository.findById(50L)).thenReturn(Optional.of(order));
+
+		assertThatThrownBy(() -> service.reopen(50L, "Motivo válido"))
+			.isInstanceOf(BadRequestException.class)
+			.hasMessageContaining("canceladas");
+
+		verify(orderRepository, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("solo un administrador puede reabrir una orden cancelada")
+	void reopenFailsForNonAdmin() {
+		order.setEstado(OrderStatus.CANCELADA);
+		when(currentUserService.isAdmin()).thenReturn(false);
+
+		assertThatThrownBy(() -> service.reopen(50L, "Motivo válido"))
+			.isInstanceOf(UnauthorizedActionException.class)
+			.hasMessageContaining("administrador");
+	}
+
+	@Test
+	@DisplayName("no permite editar una orden cancelada")
+	void updateFailsWhenOrderIsCancelled() {
+		order.setEstado(OrderStatus.CANCELADA);
+		when(orderRepository.findById(50L)).thenReturn(Optional.of(order));
+
+		assertThatThrownBy(() -> service.update(50L, request(null)))
+			.isInstanceOf(BadRequestException.class)
+			.hasMessageContaining("cancelada");
 	}
 
 	@Test

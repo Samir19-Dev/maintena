@@ -3,7 +3,7 @@ import maintenanceService from '../../services/maintenanceService';
 import assetService from '../../services/assetService';
 import userService from '../../services/userService';
 import { useAuthStore } from '../../store/authStore';
-import { Plus, Pencil, Trash2, UserCog, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, UserCog, Eye, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import OrderDetailModal from '../../components/maintenance/OrderDetailModal';
 
@@ -18,6 +18,12 @@ const TRANSICIONES = {
   COMPLETADA: [],
   CANCELADA: [],
 };
+
+// Cancelar es una decisión administrativa: el técnico solo opera su orden.
+const estadosDisponibles = (estado, isAdmin) =>
+  (TRANSICIONES[estado] || []).filter((s) => isAdmin || s !== 'CANCELADA');
+
+const esEstadoFinal = (estado) => estado === 'COMPLETADA' || estado === 'CANCELADA';
 
 const estadoStyles = {
   PENDIENTE: 'bg-yellow-100 text-yellow-800',
@@ -61,6 +67,8 @@ const OrdersPage = () => {
   const [assignOrder, setAssignOrder] = useState(null);
   const [assignTecnicoId, setAssignTecnicoId] = useState('');
   const [detailOrder, setDetailOrder] = useState(null);
+  const [reopenOrder, setReopenOrder] = useState(null);
+  const [reopenMotivo, setReopenMotivo] = useState('');
   const [formData, setFormData] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [filters, setFilters] = useState({ estado: '', tipo: '', search: '' });
@@ -154,12 +162,42 @@ const OrdersPage = () => {
 
   const handleStatusChange = async (order, estado) => {
     if (!estado) return;
+
+    // Cancelar o completar no se puede deshacer desde la ficha: se confirma antes.
+    const mensajes = {
+      CANCELADA: `¿Cancelar la orden ${order.codigo}? Podrás reabrirla después desde administración.`,
+      COMPLETADA: `¿Marcar la orden ${order.codigo} como COMPLETADA? Esta acción es definitiva.`,
+    };
+    if (mensajes[estado] && !window.confirm(mensajes[estado])) return;
+
     try {
       await maintenanceService.orders.changeStatus(order.id, estado);
       toast.success(`Estado actualizado a ${estado}`);
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error al cambiar el estado');
+    }
+  };
+
+  const openReopen = (order) => {
+    setReopenOrder(order);
+    setReopenMotivo('');
+  };
+
+  const handleReopen = async (e) => {
+    e.preventDefault();
+    if (reopenMotivo.trim().length < 5) {
+      toast.error('Indique el motivo de la reapertura (mínimo 5 caracteres)');
+      return;
+    }
+    try {
+      await maintenanceService.orders.reopen(reopenOrder.id, reopenMotivo.trim());
+      toast.success('Orden reabierta');
+      setReopenOrder(null);
+      setReopenMotivo('');
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al reabrir la orden');
     }
   };
 
@@ -284,19 +322,28 @@ const OrdersPage = () => {
                     >
                       <Eye className="w-4 h-4" />
                     </button>
-                    {canChangeStatus(order) && TRANSICIONES[order.estado]?.length > 0 && (
+                    {canChangeStatus(order) && estadosDisponibles(order.estado, isAdmin).length > 0 && (
                       <select
                         value=""
                         onChange={(e) => handleStatusChange(order, e.target.value)}
                         className="text-xs border border-gray-300 rounded px-1 py-1"
                       >
                         <option value="">Cambiar estado...</option>
-                        {TRANSICIONES[order.estado].map((s) => (
+                        {estadosDisponibles(order.estado, isAdmin).map((s) => (
                           <option key={s} value={s}>{s}</option>
                         ))}
                       </select>
                     )}
-                    {isAdmin && (
+                    {isAdmin && order.estado === 'CANCELADA' && (
+                      <button
+                        onClick={() => openReopen(order)}
+                        className="text-emerald-600 hover:text-emerald-900"
+                        title="Reabrir orden cancelada"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </button>
+                    )}
+                    {isAdmin && !esEstadoFinal(order.estado) && (
                       <>
                         <button onClick={() => openAssign(order)} className="text-indigo-600 hover:text-indigo-900" title="Asignar técnico">
                           <UserCog className="w-4 h-4" />
@@ -304,10 +351,12 @@ const OrdersPage = () => {
                         <button onClick={() => handleEdit(order)} className="text-blue-600 hover:text-blue-900" title="Editar">
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDelete(order.id)} className="text-red-600 hover:text-red-900" title="Eliminar">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
                       </>
+                    )}
+                    {isAdmin && (
+                      <button onClick={() => handleDelete(order.id)} className="text-red-600 hover:text-red-900" title="Eliminar">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     )}
                   </div>
                 </td>
@@ -459,6 +508,42 @@ const OrdersPage = () => {
                 </button>
                 <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md">
                   Asignar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {reopenOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-lg font-bold mb-1">Reabrir orden cancelada</h2>
+            <p className="text-sm text-gray-500 mb-4">{reopenOrder.codigo} — {reopenOrder.titulo}</p>
+            <p className="text-sm text-gray-600 mb-4">
+              La orden conservará su código e historial y volverá a{' '}
+              {reopenOrder.tecnicoId ? 'ASIGNADA' : 'PENDIENTE'}.
+            </p>
+            <form onSubmit={handleReopen} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Motivo de la reapertura</label>
+                <textarea
+                  value={reopenMotivo}
+                  onChange={(e) => setReopenMotivo(e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                  rows="3"
+                  minLength="5"
+                  maxLength="500"
+                  placeholder="Ej.: la orden se canceló por error durante las pruebas"
+                  required
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button type="button" onClick={() => setReopenOrder(null)} className="px-4 py-2 border rounded-md">
+                  Cancelar
+                </button>
+                <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700">
+                  Reabrir
                 </button>
               </div>
             </form>

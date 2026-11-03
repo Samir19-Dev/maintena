@@ -13,5 +13,6 @@ public interface MaintenanceOrderService {
 	MaintenanceOrderResponse update(Long id, MaintenanceOrderRequest request);
 	MaintenanceOrderResponse assign(Long id, Long tecnicoId);
 	MaintenanceOrderResponse changeStatus(Long id, OrderStatus estado, String observaciones);
+	MaintenanceOrderResponse reopen(Long id, String motivo);
 	void delete(Long id);
 }

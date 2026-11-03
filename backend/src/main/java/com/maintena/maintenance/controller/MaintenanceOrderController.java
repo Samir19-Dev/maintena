@@ -3,6 +3,7 @@ package com.maintena.maintenance.controller;
 import com.maintena.common.constant.ApiConstants;
 import com.maintena.maintenance.dto.request.MaintenanceAssignRequest;
 import com.maintena.maintenance.dto.request.MaintenanceOrderRequest;
+import com.maintena.maintenance.dto.request.MaintenanceReopenRequest;
 import com.maintena.maintenance.dto.request.MaintenanceStatusRequest;
 import com.maintena.maintenance.dto.response.MaintenanceOrderResponse;
 import com.maintena.maintenance.service.MaintenanceOrderService;
@@ -65,6 +66,14 @@ public class MaintenanceOrderController {
 	public ResponseEntity<MaintenanceOrderResponse> changeStatus(@PathVariable Long id,
 																@Valid @RequestBody MaintenanceStatusRequest request) {
 		return ResponseEntity.ok(orderService.changeStatus(id, request.getEstado(), request.getObservaciones()));
+	}
+
+	@Operation(summary = "Reabrir una orden cancelada")
+	@PatchMapping("/{id}/reopen")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<MaintenanceOrderResponse> reopen(@PathVariable Long id,
+														  @Valid @RequestBody MaintenanceReopenRequest request) {
+		return ResponseEntity.ok(orderService.reopen(id, request.getMotivo()));
 	}
 
 	@Operation(summary = "Eliminar orden de mantenimiento")

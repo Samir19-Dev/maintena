@@ -2,9 +2,10 @@ import { test, expect } from '@playwright/test';
 import { USERS } from './support/constants';
 import { login, logout } from './support/auth';
 import { header, navLink, openModule, rowContaining } from './support/ui';
-import { deleteCategoriesByNamePrefix } from './support/api';
+import { deleteCategoriesByNamePrefix, createTemporaryOrder, deleteOrdersByTitlePrefix, fetchOrder } from './support/api';
 
 const CATEGORY_PREFIX = 'E2E Categoría';
+const ORDER_PREFIX = 'E2E Orden temporal';
 const RUN_ID = Date.now();
 const CATEGORY_NAME = `${CATEGORY_PREFIX} ${RUN_ID}`;
 const EDITED_NAME = `${CATEGORY_NAME} editada`;
@@ -17,6 +18,7 @@ test.describe('Flujo ADMIN', () => {
   test.afterAll(async () => {
     // Limpieza por API: deja la base igual aunque una prueba falle a mitad.
     await deleteCategoriesByNamePrefix(CATEGORY_PREFIX);
+    await deleteOrdersByTitlePrefix(ORDER_PREFIX);
   });
 
   test('muestra el dashboard y todos los menús de administración', async ({ page }) => {
@@ -131,6 +133,57 @@ test.describe('Flujo ADMIN', () => {
 
       await expect(page.getByRole('cell', { name: EDITED_NAME, exact: true })).toHaveCount(0);
       await expect(page.locator('tbody tr')).toHaveCount(initialRows);
+    });
+  });
+
+  test('cancela una orden y la reabre sin duplicarla', async ({ page }) => {
+    const order = await createTemporaryOrder(`${ORDER_PREFIX} ${RUN_ID}`);
+    const row = () => rowContaining(page, order.codigo);
+
+    await test.step('cancelar pide confirmación y deja la orden en CANCELADA', async () => {
+      await openModule(page, 'Órdenes', 'Órdenes de Mantenimiento');
+      await page.getByPlaceholder('Buscar por código, título, activo o técnico...').fill(order.codigo);
+
+      await expect(row()).toHaveCount(1);
+
+      page.once('dialog', (dialog) => dialog.accept());
+      await row().locator('select').selectOption('CANCELADA');
+
+      await expect(row().locator('td').nth(5)).toHaveText('CANCELADA');
+      await expect(row().getByTitle('Reabrir orden cancelada')).toBeVisible();
+    });
+
+    await test.step('reabrir exige motivo y devuelve la orden a PENDIENTE', async () => {
+      await row().getByTitle('Reabrir orden cancelada').click();
+
+      const modal = page.locator('div.fixed.inset-0');
+      await expect(modal.getByRole('heading', { name: 'Reabrir orden cancelada' })).toBeVisible();
+
+      // Sin motivo no se envía: validación del formulario en el cliente.
+      await modal.getByRole('button', { name: 'Reabrir' }).click();
+      await expect(modal).toBeVisible();
+
+      await modal.locator('textarea').fill('La orden se canceló por error durante la prueba E2E.');
+      await modal.getByRole('button', { name: 'Reabrir' }).click();
+
+      await expect(modal).toHaveCount(0);
+      await expect(row().locator('td').nth(5)).toHaveText('PENDIENTE');
+      await expect(row().getByTitle('Reabrir orden cancelada')).toHaveCount(0);
+    });
+
+    await test.step('conserva el código y no crea otra orden', async () => {
+      await expect(page.getByRole('cell', { name: order.codigo, exact: true })).toHaveCount(1);
+
+      const persisted = await fetchOrder(order.id);
+      expect(persisted.codigo).toBe(order.codigo);
+      expect(persisted.estado).toBe('PENDIENTE');
+    });
+
+    await test.step('registra la reapertura en auditoría', async () => {
+      await openModule(page, 'Auditoría', 'Auditoría');
+      // Puede haber varias entradas de la misma orden (creación, cancelación,
+      // reapertura); se busca la de reapertura entre ellas.
+      await expect(rowContaining(page, order.codigo).filter({ hasText: 'Reapertura' })).toHaveCount(1);
     });
   });
 

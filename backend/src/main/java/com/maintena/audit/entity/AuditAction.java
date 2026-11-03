@@ -8,6 +8,7 @@ public enum AuditAction {
 	DELETE,
 	ASSIGN,
 	STATUS_CHANGE,
+	REOPEN,
 	APPROVE,
 	REJECT,
 	EXPORT,

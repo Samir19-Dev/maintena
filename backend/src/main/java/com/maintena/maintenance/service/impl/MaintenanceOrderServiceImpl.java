@@ -144,6 +144,12 @@ public class MaintenanceOrderServiceImpl implements MaintenanceOrderService {
 		MaintenanceOrder order = getOrder(id);
 		assertCanOperate(order);
 
+		// Cancelar es una decisión administrativa: un técnico puede operar su
+		// orden, pero no darla de baja.
+		if (estado == OrderStatus.CANCELADA && !currentUserService.isAdmin()) {
+			throw new UnauthorizedActionException("Solo un administrador puede cancelar una orden");
+		}
+
 		Set<OrderStatus> allowed = ALLOWED_TRANSITIONS.getOrDefault(order.getEstado(), Set.of());
 		if (!allowed.contains(estado)) {
 			throw new BadRequestException("Transición de estado no permitida: " + order.getEstado() + " -> " + estado);
@@ -167,6 +173,35 @@ public class MaintenanceOrderServiceImpl implements MaintenanceOrderService {
 		MaintenanceOrder saved = orderRepository.save(order);
 		auditService.record(AuditAction.STATUS_CHANGE, ENTIDAD, saved.getId(),
 			"Orden " + saved.getCodigo() + ": " + anterior + " -> " + estado);
+		return orderMapper.toResponse(saved);
+	}
+
+	@Override
+	public MaintenanceOrderResponse reopen(Long id, String motivo) {
+		// La reapertura solo la puede ejecutar un administrador; el endpoint
+		// también está restringido, pero se valida aquí por defensa en profundidad.
+		if (!currentUserService.isAdmin()) {
+			throw new UnauthorizedActionException("Solo un administrador puede reabrir una orden cancelada");
+		}
+
+		MaintenanceOrder order = getOrder(id);
+		if (order.getEstado() != OrderStatus.CANCELADA) {
+			throw new BadRequestException("Solo se pueden reabrir órdenes canceladas");
+		}
+		if (motivo == null || motivo.isBlank()) {
+			throw new BadRequestException("El motivo de la reapertura es obligatorio");
+		}
+
+		OrderStatus nuevoEstado = order.getTecnico() != null ? OrderStatus.ASIGNADA : OrderStatus.PENDIENTE;
+		order.setEstado(nuevoEstado);
+		// La orden vuelve a estar pendiente de ejecución: se descartan las fechas
+		// de una ejecución anterior para no contaminar los tiempos de resolución.
+		order.setFechaInicio(null);
+		order.setFechaFin(null);
+
+		MaintenanceOrder saved = orderRepository.save(order);
+		auditService.record(AuditAction.REOPEN, ENTIDAD, saved.getId(),
+			"Orden " + saved.getCodigo() + ": CANCELADA -> " + nuevoEstado + " (reapertura). Motivo: " + motivo);
 		return orderMapper.toResponse(saved);
 	}
 
@@ -233,8 +268,8 @@ public class MaintenanceOrderServiceImpl implements MaintenanceOrderService {
 	}
 
 	private void assertEditable(MaintenanceOrder order) {
-		if (order.getEstado() == OrderStatus.COMPLETADA) {
-			throw new BadRequestException("No se puede editar una orden completada");
+		if (order.getEstado() == OrderStatus.COMPLETADA || order.getEstado() == OrderStatus.CANCELADA) {
+			throw new BadRequestException("No se puede editar una orden completada o cancelada");
 		}
 	}
 

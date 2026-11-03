@@ -54,6 +54,13 @@ test.describe('Flujo TÉCNICO', () => {
     // Un técnico no puede crear órdenes.
     await expect(page.getByRole('button', { name: 'Nueva Orden' })).toHaveCount(0);
 
+    // Un técnico no puede cancelar: la opción CANCELADA no está disponible en sus acciones.
+    const actionSelects = page.locator('tbody tr select');
+    expect(await actionSelects.count()).toBeGreaterThan(0);
+    for (let i = 0; i < (await actionSelects.count()); i += 1) {
+      await expect(actionSelects.nth(i).locator('option', { hasText: 'CANCELADA' })).toHaveCount(0);
+    }
+
     // Filtro por estado.
     const statusFilter = page.locator('select').first();
     await statusFilter.selectOption('EN_PROCESO');
