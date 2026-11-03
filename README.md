@@ -233,6 +233,42 @@ Cualquier usuario con visibilidad sobre la orden (administradores y técnicos ve
 
 Los roles personalizados (por ejemplo `SUPERVISOR`) se comportan como `EMPLEADO` para la visibilidad de datos: ven sus propias órdenes y reportes, y solo lectura en maestros. Los permisos de escritura siguen reservados a `ADMIN` (maestros y usuarios) y `TECNICO` (operación de órdenes asignadas). Técnicos y empleados pueden consultar categorías, ubicaciones y activos en modo lectura como referencia para ubicar y clasificar los equipos.
 
+## Datos de prueba masivos
+
+El script `scripts/seed-demo.ps1` carga datos de demostración a través de la API para probar todos los módulos con volumen realista. Es idempotente: se puede ejecutar varias veces y omite lo que ya existe.
+
+```powershell
+# Con el backend en marcha (docker compose up -d)
+powershell -ExecutionPolicy Bypass -File .\scripts\seed-demo.ps1
+```
+
+También se pueden cambiar la URL y las credenciales:
+
+```powershell
+.\scripts\seed-demo.ps1 -BaseUrl http://localhost:8080/api/v1 `
+  -AdminEmail admin@maintena.com -AdminPassword 'Admin123*'
+```
+
+| Módulo | Registros generados |
+|---|---|
+| Categorías | 12 nuevas (14 en total) |
+| Ubicaciones | 12 nuevas con edificio y piso (14 en total) |
+| Activos | 24 nuevos `ACT-100`…`ACT-123` (25 en total) |
+| Usuarios | 14 nuevos: 5 técnicos, 7 empleados, 1 supervisor y 1 admin |
+| Órdenes | 40 nuevas en todos los estados + 10 generadas al aprobar reportes |
+| Reportes | 18 nuevos: 4 pendientes, 10 convertidos y 4 rechazados |
+| Comentarios | 30 |
+| Adjuntos | 14 evidencias PNG y PDF |
+
+Los usuarios nuevos usan la contraseña `Demo123*`:
+
+- `demo.tecnico1@maintena.com` … `demo.tecnico5@maintena.com` (`TECNICO`)
+- `demo.empleado1@maintena.com` … `demo.empleado7@maintena.com` (`EMPLEADO`)
+- `demo.supervisor@maintena.com` (`SUPERVISOR`)
+- `demo.admin@maintena.com` (`ADMIN`)
+
+Las órdenes, reportes, comentarios y adjuntos generados llevan el prefijo `[Demo]` para identificarlos. Para volver al estado inicial se puede recrear el volumen de MySQL con `docker compose down -v`.
+
 ## Migraciones Flyway
 
 ```
