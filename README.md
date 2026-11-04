@@ -112,12 +112,6 @@ npm run test:e2e:report           # abre el reporte HTML
 
 Dependabot (`.github/dependabot.yml`) revisa semanalmente Maven, npm, Docker y GitHub Actions.
 
-### Publicación del frontend en GitHub Pages
-
-`.github/workflows/pages.yml` compila `frontend` y publica `frontend/dist` en <https://samir19-dev.github.io/maintena/> en cada push a `main`. El build usa `VITE_BASE=/maintena/` y genera un `404.html` para que las rutas del SPA funcionen al recargar o entrar por enlace directo.
-
-GitHub Pages solo aloja el frontend: para que el sitio sea funcional necesita un backend público. Define la variable de repositorio `VITE_API_URL` (Settings → Secrets and variables → Actions → Variables) con la URL del backend, por ejemplo `https://api.midominio.com/api/v1`, y añade ese origen a `APP_CORS_ALLOWED_ORIGINS`. Sin backend público, el sitio carga pero el login apunta a `http://localhost:8080`, así que solo funciona en un navegador con el backend local en marcha (el `docker-compose.yml` ya permite el origen `https://samir19-dev.github.io` por CORS).
-
 ## Despliegue con Docker
 
 ```bash

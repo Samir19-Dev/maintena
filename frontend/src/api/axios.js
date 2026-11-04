@@ -72,9 +72,8 @@ api.interceptors.response.use(
         return api(original);
       } catch (refreshError) {
         clearSession();
-        const loginPath = `${import.meta.env.BASE_URL}login`;
-        if (window.location.pathname !== loginPath) {
-          window.location.href = loginPath;
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
         }
         return Promise.reject(refreshError);
       }

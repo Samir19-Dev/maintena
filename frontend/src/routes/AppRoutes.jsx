@@ -19,11 +19,9 @@ import AuditPage from '../pages/audit/AuditPage';
 import ProfilePage from '../pages/profile/ProfilePage';
 import NotFoundPage from '../pages/notfound/NotFoundPage';
 
-const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
-
 const AppRoutes = () => {
   return (
-    <BrowserRouter basename={basename}>
+    <BrowserRouter>
       <Toaster position="top-right" />
       <Routes>
         <Route element={<AuthLayout />}>
