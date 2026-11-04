@@ -98,7 +98,7 @@ public class ReportExportService {
 
 	private List<MaintenanceOrder> loadOrders(OrderStatus estado, MaintenanceType tipo) {
 		List<MaintenanceOrder> orders;
-		if (currentUserService.isAdmin()) {
+		if (currentUserService.isAdmin() || currentUserService.hasRole("SUPERVISOR")) {
 			orders = orderRepository.findAll();
 		} else if (currentUserService.hasRole("TECNICO")) {
 			orders = orderRepository.findByTecnicoId(currentUserService.getCurrentUser().getId());

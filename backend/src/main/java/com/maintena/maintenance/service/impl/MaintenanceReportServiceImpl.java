@@ -49,7 +49,8 @@ public class MaintenanceReportServiceImpl implements MaintenanceReportService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<MaintenanceReportResponse> findAllVisible() {
-		if (currentUserService.isAdmin() || currentUserService.hasRole("TECNICO")) {
+		if (currentUserService.isAdmin() || currentUserService.hasRole("SUPERVISOR")
+			|| currentUserService.hasRole("TECNICO")) {
 			return reportRepository.findAll().stream().map(reportMapper::toResponse).collect(Collectors.toList());
 		}
 		return findMine();
@@ -68,7 +69,8 @@ public class MaintenanceReportServiceImpl implements MaintenanceReportService {
 	@Transactional(readOnly = true)
 	public MaintenanceReportResponse findById(Long id) {
 		MaintenanceReport report = getReport(id);
-		if (!currentUserService.isAdmin() && !currentUserService.hasRole("TECNICO")
+		if (!currentUserService.isAdmin() && !currentUserService.hasRole("SUPERVISOR")
+			&& !currentUserService.hasRole("TECNICO")
 			&& !report.getSolicitante().getId().equals(currentUserService.getCurrentUser().getId())) {
 			throw new UnauthorizedActionException("No tiene permiso para ver este reporte");
 		}
@@ -152,8 +154,9 @@ public class MaintenanceReportServiceImpl implements MaintenanceReportService {
 	}
 
 	private void assertCanManage() {
-		if (!currentUserService.isAdmin() && !currentUserService.hasRole("TECNICO")) {
-			throw new UnauthorizedActionException("Solo administradores o técnicos pueden gestionar reportes");
+		if (!currentUserService.isAdmin() && !currentUserService.hasRole("SUPERVISOR")
+			&& !currentUserService.hasRole("TECNICO")) {
+			throw new UnauthorizedActionException("Solo administradores, supervisores o técnicos pueden gestionar reportes");
 		}
 	}
 

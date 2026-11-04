@@ -140,6 +140,21 @@ class ReportExportServiceTest {
 	}
 
 	@Test
+	@DisplayName("un supervisor exporta todas las órdenes")
+	void supervisorExportsAllOrders() {
+		when(currentUserService.isAdmin()).thenReturn(false);
+		when(currentUserService.hasRole("SUPERVISOR")).thenReturn(true);
+
+		String csv = new String(service.exportOrdersCsv(null, null), StandardCharsets.UTF_8);
+
+		assertThat(csv).contains("OT-2026-0001");
+		assertThat(csv).contains("OT-2026-0002");
+		verify(orderRepository).findAll();
+		verify(orderRepository, never()).findByTecnicoId(2L);
+		verify(orderRepository, never()).findBySolicitanteId(3L);
+	}
+
+	@Test
 	@DisplayName("genera un PDF válido con los datos")
 	void exportPdfGeneratesValidDocument() {
 		byte[] bytes = service.exportOrdersPdf(null, null);

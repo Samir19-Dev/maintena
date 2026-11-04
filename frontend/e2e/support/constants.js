@@ -22,6 +22,13 @@ export const USERS = {
     nombreCompleto: 'Camila Torres',
     rol: 'EMPLEADO',
   },
+  supervisor: {
+    email: 'demo.supervisor@maintena.com',
+    password: 'Demo123*',
+    nombre: 'Jorge',
+    nombreCompleto: 'Jorge Peña',
+    rol: 'SUPERVISOR',
+  },
 };
 
 export const ADMIN_ONLY_MENUS = ['Usuarios', 'Roles', 'Auditoría'];

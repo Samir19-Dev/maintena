@@ -90,6 +90,7 @@ class MaintenanceOrderServiceImplTest {
 	private User admin;
 	private User tecnico;
 	private User empleado;
+	private User supervisor;
 	private MaintenanceOrder order;
 
 	@BeforeEach
@@ -102,6 +103,7 @@ class MaintenanceOrderServiceImplTest {
 		admin = user(1L, "Ana", "Admin", "ADMIN");
 		tecnico = user(2L, "Carlos", "Tecnico", "TECNICO");
 		empleado = user(3L, "Elena", "Empleado", "EMPLEADO");
+		supervisor = user(4L, "Jorge", "Supervisor", "SUPERVISOR");
 
 		order = new MaintenanceOrder();
 		order.setId(50L);
@@ -226,7 +228,7 @@ class MaintenanceOrderServiceImplTest {
 	}
 
 	@Test
-	@DisplayName("solo el técnico asignado puede cambiar el estado")
+	@DisplayName("solo el usuario asignado puede cambiar el estado")
 	void onlyAssignedTechnicianCanChangeStatus() {
 		order.setEstado(OrderStatus.ASIGNADA);
 		order.setTecnico(tecnico);
@@ -236,7 +238,7 @@ class MaintenanceOrderServiceImplTest {
 
 		assertThatThrownBy(() -> service.changeStatus(50L, OrderStatus.EN_PROCESO, null))
 			.isInstanceOf(UnauthorizedActionException.class)
-			.hasMessageContaining("Solo el técnico asignado");
+			.hasMessageContaining("Solo el usuario asignado");
 	}
 
 	@Test
@@ -442,6 +444,67 @@ class MaintenanceOrderServiceImplTest {
 		service.findById(50L);
 
 		verify(orderRepository).findById(50L);
+	}
+
+	@Test
+	@DisplayName("un supervisor ve todas las órdenes")
+	void supervisorSeesAllOrders() {
+		when(currentUserService.isAdmin()).thenReturn(false);
+		when(currentUserService.hasRole("SUPERVISOR")).thenReturn(true);
+		when(orderRepository.findAll()).thenReturn(List.of(order));
+
+		service.findAllVisible();
+
+		verify(orderRepository).findAll();
+		verify(orderRepository, never()).findBySolicitanteId(anyLong());
+		verify(orderRepository, never()).findByTecnicoId(anyLong());
+	}
+
+	@Test
+	@DisplayName("un supervisor puede ver cualquier orden")
+	void supervisorCanViewAnyOrder() {
+		order.setTecnico(tecnico);
+		when(currentUserService.isAdmin()).thenReturn(false);
+		when(currentUserService.hasRole("SUPERVISOR")).thenReturn(true);
+		when(currentUserService.getCurrentUser()).thenReturn(supervisor);
+		when(orderRepository.findById(50L)).thenReturn(Optional.of(order));
+
+		service.findById(50L);
+
+		verify(orderRepository).findById(50L);
+	}
+
+	@Test
+	@DisplayName("un supervisor puede cambiar el estado de una orden asignada a él")
+	void supervisorCanChangeStatusOfAssignedOrder() {
+		order.setEstado(OrderStatus.ASIGNADA);
+		order.setTecnico(supervisor);
+		when(currentUserService.isAdmin()).thenReturn(false);
+		when(currentUserService.hasRole("SUPERVISOR")).thenReturn(true);
+		when(currentUserService.getCurrentUser()).thenReturn(supervisor);
+		when(orderRepository.findById(50L)).thenReturn(Optional.of(order));
+
+		service.changeStatus(50L, OrderStatus.EN_PROCESO, null);
+
+		assertThat(order.getEstado()).isEqualTo(OrderStatus.EN_PROCESO);
+		verify(auditService).record(eq(AuditAction.STATUS_CHANGE), eq("MANTENIMIENTO_ORDEN"), eq(50L), any());
+	}
+
+	@Test
+	@DisplayName("un supervisor no puede cancelar una orden")
+	void supervisorCannotCancelOrder() {
+		order.setEstado(OrderStatus.ASIGNADA);
+		order.setTecnico(supervisor);
+		when(currentUserService.isAdmin()).thenReturn(false);
+		when(currentUserService.hasRole("SUPERVISOR")).thenReturn(true);
+		when(currentUserService.getCurrentUser()).thenReturn(supervisor);
+		when(orderRepository.findById(50L)).thenReturn(Optional.of(order));
+
+		assertThatThrownBy(() -> service.changeStatus(50L, OrderStatus.CANCELADA, null))
+			.isInstanceOf(UnauthorizedActionException.class)
+			.hasMessageContaining("administrador");
+
+		verify(orderRepository, never()).save(any());
 	}
 
 	@Test

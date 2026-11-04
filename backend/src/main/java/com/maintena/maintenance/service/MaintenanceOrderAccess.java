@@ -24,7 +24,7 @@ public class MaintenanceOrderAccess {
 		MaintenanceOrder order = orderRepository.findById(id)
 			.orElseThrow(() -> new ResourceNotFoundException("Orden de mantenimiento", "id", id));
 
-		if (currentUserService.isAdmin()) {
+		if (currentUserService.isAdmin() || currentUserService.hasRole("SUPERVISOR")) {
 			return order;
 		}
 		User current = currentUserService.getCurrentUser();

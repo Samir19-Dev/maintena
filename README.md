@@ -78,12 +78,13 @@ Casos cubiertos: máquina de estados de órdenes y permisos (incluida la cancela
 
 ### Pruebas E2E con Playwright
 
-La carpeta `frontend/e2e` contiene 13 pruebas que recorren los flujos de los tres roles contra la aplicación real (no usan mocks):
+La carpeta `frontend/e2e` contiene 16 pruebas que recorren los flujos de los cuatro roles contra la aplicación real (no usan mocks):
 
 | Suite | Cobertura |
 |---|---|
 | `admin.spec.js` | Login, dashboard con KPIs, navegación por todos los módulos, creación/edición/eliminación de una categoría, cancelación con confirmación y reapertura de la misma orden (con motivo y registro en auditoría), cierre de sesión y error con credenciales inválidas |
 | `tecnico.spec.js` | Menús de administración ocultos, redirección de `/users`, órdenes limitadas a las asignadas (contrastadas con la API), sin opción de cancelar, filtros, búsqueda y detalle con comentarios/adjuntos |
+| `supervisor.spec.js` | Menús de operación sin administración, mismo universo de órdenes que el administrador, cambio de estado solo en las asignadas a él y gestión de todos los reportes sin poder eliminarlos |
 | `empleado.spec.js` | Menús de administración ocultos, redirección de `/users`, órdenes propias sin acciones de gestión y creación de un reporte de falla |
 
 Requisitos: el stack en marcha (`docker compose up -d`) y los datos de prueba cargados con `scripts/seed-demo.ps1`, porque las pruebas usan los usuarios `demo.*`.
@@ -254,6 +255,7 @@ Cualquier usuario con visibilidad sobre la orden (administradores y técnicos ve
 | Rol | Permisos |
 |---|---|
 | `ADMIN` | Acceso total; crea/edita/elimina maestros y órdenes, cancela y reabre órdenes |
+| `SUPERVISOR` | Ve todas las órdenes y reportes; cambia el estado de las órdenes asignadas a él y aprueba/rechaza reportes. No crea, asigna, cancela ni reabre órdenes |
 | `TECNICO` | Ve solo las órdenes asignadas a él, cambia su estado (no puede cancelarlas) y gestiona reportes |
 | `EMPLEADO` | Reporta fallas y ve sus propios reportes y órdenes |
 
@@ -261,7 +263,7 @@ Cualquier usuario con visibilidad sobre la orden (administradores y técnicos ve
 
 `PENDIENTE → ASIGNADA → EN_PROCESO → COMPLETADA` es el flujo normal; `CANCELADA` se alcanza desde cualquier estado abierto y `COMPLETADA` es terminal. Cancelar exige confirmación y está reservado a `ADMIN`. Una orden cancelada por error puede **reabrirse** (`PATCH /maintenance/orders/{id}/reopen`, solo `ADMIN`) indicando un motivo obligatorio: conserva su código e historial, vuelve a `PENDIENTE` si no tenía técnico o a `ASIGNADA` si lo conserva, y la reapertura queda registrada en auditoría con la acción `REOPEN`. Las órdenes `COMPLETADA` y `CANCELADA` no se pueden editar.
 
-Los roles personalizados (por ejemplo `SUPERVISOR`) se comportan como `EMPLEADO` para la visibilidad de datos: ven sus propias órdenes y reportes, y solo lectura en maestros. Los permisos de escritura siguen reservados a `ADMIN` (maestros y usuarios) y `TECNICO` (operación de órdenes asignadas). Técnicos y empleados pueden consultar categorías, ubicaciones y activos en modo lectura como referencia para ubicar y clasificar los equipos.
+El rol `SUPERVISOR` tiene visibilidad global: ve todas las órdenes y reportes, puede aprobar o rechazar reportes y cambiar el estado de las órdenes que tenga asignadas, pero no puede crear, asignar, cancelar ni reabrir órdenes. Otros roles personalizados se comportan como `EMPLEADO` para la visibilidad de datos: ven sus propias órdenes y reportes, y solo lectura en maestros. Los permisos de escritura siguen reservados a `ADMIN` (maestros y usuarios) y `TECNICO`/`SUPERVISOR` (operación de sus órdenes asignadas). Todos los roles pueden consultar categorías, ubicaciones y activos en modo lectura como referencia para ubicar y clasificar los equipos.
 
 ## Datos de prueba masivos
 

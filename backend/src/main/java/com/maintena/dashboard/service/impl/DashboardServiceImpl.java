@@ -90,7 +90,7 @@ public class DashboardServiceImpl implements DashboardService {
 	}
 
 	private List<MaintenanceOrder> visibleOrders() {
-		if (currentUserService.isAdmin()) {
+		if (currentUserService.isAdmin() || currentUserService.hasRole("SUPERVISOR")) {
 			return orderRepository.findAll();
 		}
 		if (currentUserService.hasRole("TECNICO")) {
@@ -100,7 +100,8 @@ public class DashboardServiceImpl implements DashboardService {
 	}
 
 	private List<MaintenanceReport> visibleReports() {
-		if (currentUserService.isAdmin() || currentUserService.hasRole("TECNICO")) {
+		if (currentUserService.isAdmin() || currentUserService.hasRole("SUPERVISOR")
+			|| currentUserService.hasRole("TECNICO")) {
 			return reportRepository.findAll();
 		}
 		return reportRepository.findBySolicitanteId(currentUserService.getCurrentUser().getId());

@@ -23,7 +23,7 @@ const prioridadStyles = {
 
 const ReportsPage = () => {
   const { user } = useAuthStore();
-  const isManager = user?.rol === 'ADMIN' || user?.rol === 'TECNICO';
+  const isManager = ['ADMIN', 'TECNICO', 'SUPERVISOR'].includes(user?.rol);
 
   const [reports, setReports] = useState([]);
   const [assets, setAssets] = useState([]);

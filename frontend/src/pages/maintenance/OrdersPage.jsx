@@ -57,7 +57,7 @@ const OrdersPage = () => {
   const isAdmin = user?.rol === 'ADMIN';
 
   const canChangeStatus = (order) =>
-    isAdmin || (user?.rol === 'TECNICO' && order.tecnicoId === user?.id);
+    isAdmin || (['TECNICO', 'SUPERVISOR'].includes(user?.rol) && order.tecnicoId === user?.id);
 
   const [orders, setOrders] = useState([]);
   const [assets, setAssets] = useState([]);

@@ -134,6 +134,24 @@ class DashboardServiceImplTest {
 	}
 
 	@Test
+	@DisplayName("un supervisor ve todas las órdenes y reportes en el dashboard")
+	void summaryScopesGlobalDataForSupervisor() {
+		when(currentUserService.isAdmin()).thenReturn(false);
+		when(currentUserService.hasRole("SUPERVISOR")).thenReturn(true);
+		when(orderRepository.findAll()).thenReturn(List.of());
+		when(reportRepository.findAll()).thenReturn(List.of());
+		when(assetRepository.findAll()).thenReturn(List.of());
+
+		DashboardSummaryResponse summary = service.getSummary();
+
+		assertThat(summary.getTotalOrders()).isZero();
+		assertThat(summary.getTotalReports()).isZero();
+		verify(orderRepository).findAll();
+		verify(reportRepository).findAll();
+		verify(orderRepository, never()).findBySolicitanteId(3L);
+	}
+
+	@Test
 	@DisplayName("un empleado solo ve sus propias órdenes y reportes")
 	void summaryScopesDataForEmployee() {
 		when(currentUserService.isAdmin()).thenReturn(false);

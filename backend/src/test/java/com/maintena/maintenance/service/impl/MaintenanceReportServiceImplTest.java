@@ -35,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,6 +75,7 @@ class MaintenanceReportServiceImplTest {
 	private User admin;
 	private User tecnico;
 	private User empleado;
+	private User supervisor;
 	private MaintenanceReport report;
 
 	@BeforeEach
@@ -86,6 +88,7 @@ class MaintenanceReportServiceImplTest {
 		admin = user(1L, "Ana", "Admin", "ADMIN");
 		tecnico = user(2L, "Carlos", "Tecnico", "TECNICO");
 		empleado = user(3L, "Elena", "Empleado", "EMPLEADO");
+		supervisor = user(4L, "Jorge", "Supervisor", "SUPERVISOR");
 
 		report = new MaintenanceReport();
 		report.setId(70L);
@@ -170,7 +173,7 @@ class MaintenanceReportServiceImplTest {
 
 		assertThatThrownBy(() -> service.approve(70L))
 			.isInstanceOf(UnauthorizedActionException.class)
-			.hasMessageContaining("administradores o técnicos");
+			.hasMessageContaining("administradores, supervisores o técnicos");
 	}
 
 	@Test
@@ -232,6 +235,45 @@ class MaintenanceReportServiceImplTest {
 			.hasMessageContaining("Activo");
 
 		verify(reportRepository, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("un supervisor ve todos los reportes")
+	void supervisorSeesAllReports() {
+		when(currentUserService.isAdmin()).thenReturn(false);
+		when(currentUserService.hasRole("SUPERVISOR")).thenReturn(true);
+		when(reportRepository.findAll()).thenReturn(List.of(report));
+
+		service.findAllVisible();
+
+		verify(reportRepository).findAll();
+		verify(reportRepository, never()).findBySolicitanteId(3L);
+	}
+
+	@Test
+	@DisplayName("un supervisor puede ver reportes ajenos")
+	void supervisorCanViewForeignReport() {
+		when(currentUserService.isAdmin()).thenReturn(false);
+		when(currentUserService.hasRole("SUPERVISOR")).thenReturn(true);
+		when(currentUserService.getCurrentUser()).thenReturn(supervisor);
+		when(reportRepository.findById(70L)).thenReturn(Optional.of(report));
+
+		service.findById(70L);
+
+		verify(reportRepository).findById(70L);
+	}
+
+	@Test
+	@DisplayName("un supervisor puede rechazar reportes")
+	void supervisorCanReject() {
+		when(currentUserService.isAdmin()).thenReturn(false);
+		when(currentUserService.hasRole("SUPERVISOR")).thenReturn(true);
+		when(reportRepository.findById(70L)).thenReturn(Optional.of(report));
+
+		service.reject(70L);
+
+		assertThat(report.getEstado()).isEqualTo(ReportStatus.RECHAZADA);
+		verify(auditService).record(eq(AuditAction.REJECT), eq("MANTENIMIENTO_REPORTE"), eq(70L), any());
 	}
 
 	@Test

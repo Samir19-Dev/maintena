@@ -48,14 +48,14 @@ public class MaintenanceReportController {
 
 	@Operation(summary = "Aprobar reporte y generar orden de trabajo")
 	@PatchMapping("/{id}/approve")
-	@PreAuthorize("hasAnyRole('ADMIN','TECNICO')")
+	@PreAuthorize("hasAnyRole('ADMIN','TECNICO','SUPERVISOR')")
 	public ResponseEntity<MaintenanceReportResponse> approve(@PathVariable Long id) {
 		return ResponseEntity.ok(reportService.approve(id));
 	}
 
 	@Operation(summary = "Rechazar reporte")
 	@PatchMapping("/{id}/reject")
-	@PreAuthorize("hasAnyRole('ADMIN','TECNICO')")
+	@PreAuthorize("hasAnyRole('ADMIN','TECNICO','SUPERVISOR')")
 	public ResponseEntity<MaintenanceReportResponse> reject(@PathVariable Long id) {
 		return ResponseEntity.ok(reportService.reject(id));
 	}

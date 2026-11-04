@@ -67,7 +67,7 @@ public class MaintenanceOrderServiceImpl implements MaintenanceOrderService {
 	@Transactional(readOnly = true)
 	public List<MaintenanceOrderResponse> findAllVisible() {
 		List<MaintenanceOrder> orders;
-		if (currentUserService.isAdmin()) {
+		if (currentUserService.isAdmin() || currentUserService.hasRole("SUPERVISOR")) {
 			orders = orderRepository.findAll();
 		} else if (currentUserService.hasRole("TECNICO")) {
 			orders = orderRepository.findByTecnicoId(currentUserService.getCurrentUser().getId());
@@ -244,7 +244,7 @@ public class MaintenanceOrderServiceImpl implements MaintenanceOrderService {
 	}
 
 	private void assertCanView(MaintenanceOrder order) {
-		if (currentUserService.isAdmin()) {
+		if (currentUserService.isAdmin() || currentUserService.hasRole("SUPERVISOR")) {
 			return;
 		}
 		User current = currentUserService.getCurrentUser();
@@ -263,7 +263,7 @@ public class MaintenanceOrderServiceImpl implements MaintenanceOrderService {
 		if (currentUserService.isAdmin()) return;
 		User current = currentUserService.getCurrentUser();
 		if (order.getTecnico() == null || !order.getTecnico().getId().equals(current.getId())) {
-			throw new UnauthorizedActionException("Solo el técnico asignado puede cambiar el estado de la orden");
+			throw new UnauthorizedActionException("Solo el usuario asignado puede cambiar el estado de la orden");
 		}
 	}
 

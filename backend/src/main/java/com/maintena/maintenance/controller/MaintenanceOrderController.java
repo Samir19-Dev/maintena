@@ -62,7 +62,7 @@ public class MaintenanceOrderController {
 
 	@Operation(summary = "Cambiar estado de la orden")
 	@PatchMapping("/{id}/status")
-	@PreAuthorize("hasAnyRole('ADMIN','TECNICO')")
+	@PreAuthorize("hasAnyRole('ADMIN','TECNICO','SUPERVISOR')")
 	public ResponseEntity<MaintenanceOrderResponse> changeStatus(@PathVariable Long id,
 																@Valid @RequestBody MaintenanceStatusRequest request) {
 		return ResponseEntity.ok(orderService.changeStatus(id, request.getEstado(), request.getObservaciones()));

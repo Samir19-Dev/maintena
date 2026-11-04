@@ -43,7 +43,7 @@ export async function fetchOrderCodes(user) {
 }
 
 /** Crea una orden temporal para las pruebas y devuelve la orden creada. */
-export async function createTemporaryOrder(titulo) {
+export async function createTemporaryOrder(titulo, extra = {}) {
   const { context, headers } = await createApiSession();
 
   try {
@@ -64,12 +64,49 @@ export async function createTemporaryOrder(titulo) {
         tipo: 'PREVENTIVO',
         prioridad: 'BAJA',
         activoId: assets[0].id,
+        ...extra,
       },
     });
     if (!response.ok()) {
       throw new Error(`POST /maintenance/orders falló (${response.status()}): ${await response.text()}`);
     }
     return await response.json();
+  } finally {
+    await context.dispose();
+  }
+}
+
+/** Id del usuario con ese correo (consulta hecha como administrador). */
+export async function findUserIdByEmail(email) {
+  const { context, headers } = await createApiSession();
+
+  try {
+    const response = await context.get(`${API_URL}/users`, { headers });
+    if (!response.ok()) {
+      throw new Error(`GET /users falló (${response.status()}): ${await response.text()}`);
+    }
+    const users = await response.json();
+    const found = users.find((item) => item.email === email);
+    if (!found) {
+      throw new Error(`No se encontró el usuario ${email}`);
+    }
+    return found.id;
+  } finally {
+    await context.dispose();
+  }
+}
+
+/** Cantidad de reportes visibles para un usuario. */
+export async function fetchReportCount(user) {
+  const { context, headers } = await createApiSession(user.email, user.password);
+
+  try {
+    const response = await context.get(`${API_URL}/maintenance/reports`, { headers });
+    if (!response.ok()) {
+      throw new Error(`GET /maintenance/reports falló (${response.status()}): ${await response.text()}`);
+    }
+    const reports = await response.json();
+    return reports.length;
   } finally {
     await context.dispose();
   }
