@@ -26,8 +26,8 @@ public class CorsConfig {
 		config.setAllowedHeaders(List.of("*"));
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		config.setExposedHeaders(List.of("Authorization"));
-		// Permite que un frontend público (GitHub Pages) llame al backend en la
-		// red local, como exige Chrome con Private Network Access.
+		// Permite que un frontend servido desde otro origen llame al backend en
+		// la red local, como exige Chrome con Private Network Access.
 		config.setAllowPrivateNetwork(true);
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

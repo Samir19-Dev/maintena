@@ -2,6 +2,16 @@
 
 Plataforma web de gestión de mantenimiento y órdenes de trabajo.
 
+## Capturas
+
+| Dashboard | Órdenes de trabajo |
+|---|---|
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Órdenes](docs/screenshots/orders.png) |
+
+| Reportes de falla | Inicio de sesión |
+|---|---|
+| ![Reportes](docs/screenshots/reports.png) | ![Login](docs/screenshots/login.png) |
+
 ## Stack
 
 - **Backend:** Java 21, Spring Boot 3.5, Spring Web, Spring Data JPA, Hibernate, MySQL 8, Spring Security (JWT), Spring Validation, Spring Mail, Actuator, Lombok, MapStruct, Springdoc OpenAPI, Flyway, Maven
