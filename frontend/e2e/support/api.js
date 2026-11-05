@@ -76,6 +76,38 @@ export async function createTemporaryOrder(titulo, extra = {}) {
   }
 }
 
+/** Crea un reporte de falla temporal para las pruebas y devuelve el reporte creado. */
+export async function createTemporaryReport(descripcion, extra = {}) {
+  const { context, headers } = await createApiSession();
+
+  try {
+    const assetsResponse = await context.get(`${API_URL}/assets`, { headers });
+    if (!assetsResponse.ok()) {
+      throw new Error(`GET /assets falló (${assetsResponse.status()}): ${await assetsResponse.text()}`);
+    }
+    const assets = await assetsResponse.json();
+    if (assets.length === 0) {
+      throw new Error('No hay activos disponibles para crear el reporte temporal');
+    }
+
+    const response = await context.post(`${API_URL}/maintenance/reports`, {
+      headers,
+      data: {
+        descripcion,
+        activoId: assets[0].id,
+        prioridad: 'MEDIA',
+        ...extra,
+      },
+    });
+    if (!response.ok()) {
+      throw new Error(`POST /maintenance/reports falló (${response.status()}): ${await response.text()}`);
+    }
+    return await response.json();
+  } finally {
+    await context.dispose();
+  }
+}
+
 /** Id del usuario con ese correo (consulta hecha como administrador). */
 export async function findUserIdByEmail(email) {
   const { context, headers } = await createApiSession();

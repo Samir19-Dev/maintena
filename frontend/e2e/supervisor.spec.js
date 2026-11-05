@@ -4,13 +4,16 @@ import { login } from './support/auth';
 import { header, navLink, openModule, rowContaining, visibleOrderCodes } from './support/ui';
 import {
   createTemporaryOrder,
+  createTemporaryReport,
   deleteOrdersByTitlePrefix,
+  deleteReportsByMarker,
   fetchOrderCodes,
   fetchReportCount,
   findUserIdByEmail,
 } from './support/api';
 
 const ORDER_PREFIX = 'E2E Supervisor';
+const REPORT_PREFIX = 'E2E Supervisor reporte';
 const RUN_ID = Date.now();
 
 test.describe('Flujo SUPERVISOR', () => {
@@ -20,6 +23,7 @@ test.describe('Flujo SUPERVISOR', () => {
 
   test.afterAll(async () => {
     await deleteOrdersByTitlePrefix(ORDER_PREFIX);
+    await deleteReportsByMarker(REPORT_PREFIX);
   });
 
   test('ve los módulos de operación y no los de administración', async ({ page }) => {
@@ -72,14 +76,19 @@ test.describe('Flujo SUPERVISOR', () => {
   });
 
   test('ve todos los reportes y puede aprobarlos o rechazarlos', async ({ page }) => {
+    // La suite crea su propio reporte pendiente para no depender de los datos demo.
+    const reportDescription = `${REPORT_PREFIX} ${RUN_ID}`;
+    await createTemporaryReport(reportDescription);
+
     await openModule(page, 'Reportes', 'Reportes de Falla');
 
     const expected = await fetchReportCount(USERS.admin);
     await expect(page.locator('tbody tr')).toHaveCount(expected);
 
     // Puede gestionar los pendientes, pero el borrado sigue siendo solo del administrador.
-    await expect(page.getByTitle('Aprobar y generar orden').first()).toBeVisible();
-    await expect(page.getByTitle('Rechazar').first()).toBeVisible();
-    await expect(page.getByTitle('Eliminar')).toHaveCount(0);
+    const row = rowContaining(page, reportDescription);
+    await expect(row.getByTitle('Aprobar y generar orden')).toBeVisible();
+    await expect(row.getByTitle('Rechazar')).toBeVisible();
+    await expect(row.getByTitle('Eliminar')).toHaveCount(0);
   });
 });
