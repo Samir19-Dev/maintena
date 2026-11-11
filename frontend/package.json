@@ -13,7 +13,7 @@
     "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
-    "@hookform/resolvers": "^6.0.2",
+    "@hookform/resolvers": "^7.0.3",
     "axios": "^1.21.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
